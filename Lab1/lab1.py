@@ -1,6 +1,7 @@
 import sys, argparse
 import numpy as np
 import matplotlib.pyplot as plt
+import math
 
 
 def linear_generator(x0, a, c, M):
@@ -28,11 +29,21 @@ def discrete_psi(gen, j):
     while True:
         yield next(gen) % j
 
+def moments_match(seq):
+    n = len(seq)
+    m = np.mean(seq)
+    s2 = (1 / (n - 1)) * np.sum([(num - m) ** 2 for num in seq])
+    ksi1 = m - 0.5
+    ksi2 = s2 - 1/12
+    c1 = math.sqrt(12 * n)
+    c2 = ((n - 1) / n) * (0.0056 * 1/n + 0.0028 * 1/(n ** 2) - 0.0083 * 1/(n ** 3)) ** (-0.5)
+
+
+
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-mn', '--mod_normally', action='store_true', dest='mod')
-    args = parser.parse_args()
+    eps0 = 0.05
+
     lc_file = open('inputLC.txt', mode='r')
     gen0x0 = int(lc_file.readline())
     gen0a = int(lc_file.readline())
@@ -54,38 +65,32 @@ if __name__ == '__main__':
     genK = int(mm_file.readline())
     mm_file.close()
 
+    gen3M = 2 ** 10 + 1
+
     gen0 = linear_generator(gen0x0, gen0a, gen0c, gen0M)
     gen1 = linear_generator(gen1x0, gen1a, gen1c, gen1M)
     gen2 = linear_generator(gen2x0, gen2a, gen2c, gen2M)
-    gen3 = M_generator(gen1, gen2, 2 ** 10 + 1, genK)
-    gens = [gen1, gen2, gen3]
-    maxs = [101, 2 ** 10 + 1, 101]
+    gen3 = M_generator(gen1, gen2, gen3M, genK)
+    gens = [gen0, gen1, gen2, gen3]
+    maxs = [gen0M, gen1M, gen2M, gen1M]
 
     n1 = 10000
-    n2 = 2 ** 20
+    n2 = 10 ** 6
 
-    examples01 = [next(gen0) for i in range(n1)]
-    examples02 = [next(gen0) for i in range(n2)]
+    all_examples = []
 
-    examples11 = [next(gen1) for i in range(n1)]
-    examples12 = [next(gen1) for i in range(n2)]
+    for i in range(4):
+        gen = normally_psi(gens[i], maxs[i])
+        all_examples.append(np.array([next(gen) for _ in range(n1)]))
+        all_examples.append(np.array([next(gen) for _ in range(n2)]))
 
-    examples21 = [next(gen2) for i in range(n1)]
-    examples22 = [next(gen2) for i in range(n2)]
 
-    examples31 = [next(gen3) for i in range(n1)]
-    examples32 = [next(gen3) for i in range(n2)]
-
-    all_examples = [examples01, examples02, examples11, examples12, examples21, examples22, examples31, examples32]
+    for examples in all_examples:
+        moments_match(examples)
 
     fig = plt.figure()
 
-    for i in range(3):
-        jmax = 5
-        if i == 2:
-            jmax = 4
-        for j in range(2, jmax):
-            plt.subplot(4, 3, i * 3 + j - 1)
-            plt.scatter([all_examples[i * 3 + j - 2][k] for k in range(len(all_examples[i * 3 + j - 2])-1)], [all_examples[i * 3 + j - 2][k] for k in range(1, len(all_examples[i * 3 + j - 2]))])
-
+    for i in range(8):
+        plt.subplot(3, 3, i + 1)
+        plt.scatter(all_examples[i][:-1], all_examples[i][1:])
     plt.show()
