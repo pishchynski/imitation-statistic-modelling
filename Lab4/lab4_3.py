@@ -1,11 +1,14 @@
-import math
-import random
 import numpy as np
-import scipy.integrate as integr
 
-data = np.genfromtxt('33-student.txt', delimiter=' ')
-A, f = data[:-1], data[-1]
-print(A.shape, f.shape)
+A, f = [], []
+with open('33-student.txt') as file:
+    n = int(file.readline().strip())
+    for i in range(n):
+        A.append([float(x) for x in file.readline().split()])
+    file.readline()
+    f = [float(x) for x in file.readline().split()]
+
+A, f = np.array(A), np.array(f)
 
 print(np.max(A))
 
@@ -16,3 +19,7 @@ while abs(np.max(x_prev - x_new)) > 0.00001:
     x_prev = deepcopy(x_new)
     x_new = A.dot(x_new) + f
     print(np.max(x_new - A.dot(x_new) - f))
+
+print('==================')
+for i in range(15):
+    print(x_new[i])
